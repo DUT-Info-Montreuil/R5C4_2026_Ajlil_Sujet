@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import sqlite3
 
 from database import get_connection, get_referentiel
 
@@ -7,9 +6,6 @@ from database import get_connection, get_referentiel
 app = Flask(__name__)
 
 
-# ---------------------------------------------------------
-# ROUTE DE TEST
-# ---------------------------------------------------------
 
 @app.route("/")
 def accueil():
@@ -19,9 +15,6 @@ def accueil():
    }
 
 
-# ---------------------------------------------------------
-# REFERENTIEL
-# ---------------------------------------------------------
 
 @app.route("/api/v1/parties/referentiel", methods=["GET"])
 def referentiel():
@@ -37,16 +30,10 @@ def referentiel():
        }), 500
 
 
-# ---------------------------------------------------------
-# PARTIES
-# ---------------------------------------------------------
 
 @app.route("/api/v1/parties", methods=["GET"])
 def get_parties():
 
-   # -----------------------------------------------------
-   # 1. RÉCUPÉRATION DES PARAMÈTRES
-   # -----------------------------------------------------
 
    annee = request.args.get("annee")
    serveur = request.args.get("serveur")
@@ -61,10 +48,6 @@ def get_parties():
    offset = request.args.get("offset", "0")
 
 
-   # -----------------------------------------------------
-   # 2. VALIDATION DE LIMIT
-   # -----------------------------------------------------
-
    try:
        limit = int(limit)
    except ValueError:
@@ -77,10 +60,6 @@ def get_parties():
            "error": "Le paramètre limit doit être supérieur à 0."
        }), 400
 
-
-   # -----------------------------------------------------
-   # 3. VALIDATION DE OFFSET
-   # -----------------------------------------------------
 
    try:
        offset = int(offset)
@@ -95,9 +74,6 @@ def get_parties():
        }), 400
 
 
-   # -----------------------------------------------------
-   # 4. VALIDATION DU TRI
-   # -----------------------------------------------------
 
    tris_acceptes = {
        "date": "p.debut",
@@ -111,9 +87,6 @@ def get_parties():
        }), 400
 
 
-   # -----------------------------------------------------
-   # 5. VALIDATION DE L'ORDRE
-   # -----------------------------------------------------
 
    ordres_acceptes = {
        "asc": "ASC",
@@ -127,9 +100,6 @@ def get_parties():
        }), 400
 
 
-   # -----------------------------------------------------
-   # 6. CONSTRUCTION DE LA REQUÊTE
-   # -----------------------------------------------------
 
    query_from = """
        FROM parties p
@@ -142,18 +112,12 @@ def get_parties():
    parameters = []
 
 
-   # -----------------------------------------------------
-   # 7. FILTRE ANNÉE
-   # -----------------------------------------------------
 
    if annee:
        conditions.append("strftime('%Y', p.debut) = ?")
        parameters.append(annee)
 
 
-   # -----------------------------------------------------
-   # 8. FILTRE SERVEUR
-   # -----------------------------------------------------
 
    if serveur:
        conditions.append("""
@@ -167,27 +131,18 @@ def get_parties():
        parameters.append(serveur)
 
 
-   # -----------------------------------------------------
-   # 9. FILTRE JEU
-   # -----------------------------------------------------
 
    if jeu:
         conditions.append("j.nom = ?")
         parameters.append(jeu)
 
 
-   # -----------------------------------------------------
-   # 10. FILTRE FILE
-   # -----------------------------------------------------
 
    if file:
        conditions.append("f.nom = ?")
        parameters.append(file)
 
 
-   # -----------------------------------------------------
-   # 11. WHERE
-   # -----------------------------------------------------
 
    where = ""
 
@@ -195,9 +150,6 @@ def get_parties():
        where = " WHERE " + " AND ".join(conditions)
 
 
-   # -----------------------------------------------------
-   # 12. CALCUL DU TOTAL
-   # -----------------------------------------------------
 
    count_query = """
        SELECT COUNT(*) AS total
@@ -213,9 +165,6 @@ def get_parties():
    total = total_result["total"]
 
 
-   # -----------------------------------------------------
-   # 13. RÉCUPÉRATION DES PARTIES
-   # -----------------------------------------------------
 
    order_by = tris_acceptes[tri]
    order_direction = ordres_acceptes[ordre]
@@ -245,23 +194,14 @@ def get_parties():
    connection.close()
 
 
-   # -----------------------------------------------------
-   # 14. CONVERSION EN JSON
-   # -----------------------------------------------------
 
    data = [dict(row) for row in rows]
 
 
-   # -----------------------------------------------------
-   # 15. RÉPONSE
-   # -----------------------------------------------------
 
    return jsonify({"data": data, "total": total, "limit": limit, "offset": offset}), 200
 
 
-# ---------------------------------------------------------
-# LANCEMENT DE L'API
-# ---------------------------------------------------------
 
 if __name__ == "__main__":
    app.run(
